@@ -360,7 +360,7 @@ fun PantallaAlarmas(atras: Pair<String, Int>?, adelante: Pair<String, Int>?) {
     val elegirTono = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         @Suppress("DEPRECATION") val uri = r.data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
         val i = Alarmas.lista.indexOfFirst { it.id == tonoDe }
-        if (r.resultCode == ComponentActivity.RESULT_OK && i >= 0) { Alarmas.lista[i] = Alarmas.lista[i].copy(tono = uri?.toString().orEmpty()); Alarmas.guardar(ctx) }
+        if (r.resultCode == android.app.Activity.RESULT_OK && i >= 0) { Alarmas.lista[i] = Alarmas.lista[i].copy(tono = uri?.toString().orEmpty()); Alarmas.guardar(ctx) }
     }
 
     Box(Modifier.fillMaxSize().background(t.fondo)) {
