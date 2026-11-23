@@ -75,6 +75,7 @@ const val IR_ALARMAS = 100
 const val IR_TEMPORIZADOR = 101
 private val INTER = FontFamily(Font(R.font.inter_600, FontWeight.SemiBold))
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @androidx.compose.runtime.Composable
 private fun Pantallas() {
     val ctx = LocalContext.current
@@ -86,6 +87,8 @@ private fun Pantallas() {
     var barra by remember { mutableStateOf(false) }
     var toques by remember { mutableIntStateOf(0) }
     var verReposo by remember { mutableStateOf(false) }
+    /* Al abrir, si falta algún permiso para las alarmas, lo avisa (como la app original) */
+    var verPermisos by remember { mutableStateOf(Permisos.faltan(ctx)) }
     /* La barra de ajustes aparece al tocar y se esconde sola */
     LaunchedEffect(barra, toques) { if (barra) { delay(4500); barra = false } }
     LaunchedEffect(estado) { snapshotFlow { estado.currentPage }.collect { Ajustes.pagina = it; Ajustes.guardar(ctx) } }
@@ -100,7 +103,11 @@ private fun Pantallas() {
         }
     }
     androidx.compose.runtime.CompositionLocalProvider(LocalIr provides ir) {
-    androidx.compose.foundation.pager.VerticalPager(vertical, Modifier.fillMaxSize().background(Color.Black), beyondViewportPageCount = 1) { v ->
+    /* Sin rebote: se desliza directo de una pantalla a otra, rápido y sin estirarse en los bordes */
+    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.LocalOverscrollConfiguration provides null) {
+    androidx.compose.foundation.pager.VerticalPager(vertical, Modifier.fillMaxSize().background(Color.Black), beyondViewportPageCount = 1,
+        flingBehavior = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(vertical,
+            snapAnimationSpec = androidx.compose.animation.core.spring(dampingRatio = 1f, stiffness = 1400f))) { v ->
     Box(Modifier.fillMaxSize().paginaFluida(vertical, v)) {
     when (v) {
     1 -> PantallaAlarmas("Reloj" to -1, "Música" to 6)
@@ -117,7 +124,9 @@ private fun Pantallas() {
             )
         }
     ) {
-        HorizontalPager(state = estado, modifier = Modifier.fillMaxSize()) { p ->
+        HorizontalPager(state = estado, modifier = Modifier.fillMaxSize(),
+            flingBehavior = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(estado,
+                snapAnimationSpec = androidx.compose.animation.core.spring(dampingRatio = 1f, stiffness = 1000f))) { p ->
             Box(Modifier.fillMaxSize().paginaFluida(estado, p)) { Pagina(p, ahora) }
         }
         AnimatedVisibility(
@@ -143,6 +152,7 @@ private fun Pantallas() {
                 chip("Letra: " + Ajustes.nombreLetra()) { Ajustes.siguienteLetra() }
                 chip("Ciudad") { Clima.pedir = true; barra = false }
                 chip("Pantalla de reposo") { verReposo = true; barra = false }
+                chip("Permisos de alarmas") { verPermisos = true; barra = false }
                 chip(if (Ajustes.suave) "Movimiento suave" else "Movimiento por pasos") { Ajustes.suave = !Ajustes.suave }
             }
         }
@@ -151,7 +161,9 @@ private fun Pantallas() {
     }
     }
     }
+    }
     DialogoCiudad()
+    if (verPermisos) DialogoPermisos { verPermisos = false }
     }
 }
 
