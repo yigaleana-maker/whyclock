@@ -226,11 +226,12 @@ private fun DeslizarCristal(onApagar: () -> Unit) {
     val brillo = rememberInfiniteTransition(label = "brillo")
     val barrido by brillo.animateFloat(-0.4f, 1.4f, infiniteRepeatable(tween(2400, easing = LinearEasing), RepeatMode.Restart), label = "barrido")
 
+    val agarre = remember { Animatable(0f) }
+    val fondo = rememberFondoLocal()
+
     BoxWithConstraints(
         Modifier.fillMaxWidth().height(76.dp)
             .clip(RoundedCornerShape(50))
-            .background(Brush.verticalGradient(listOf(Color(0x24FFFFFF), Color(0x0DFFFFFF))))
-            .background(Color(0xFF1C1C1E).copy(alpha = 0.85f))
             .border(1.dp, Brush.verticalGradient(listOf(Color(0x33FFFFFF), Color(0x0AFFFFFF))), RoundedCornerShape(50))
     ) {
         val mangoPx = with(densidad) { 68.dp.toPx() }
@@ -239,65 +240,82 @@ private fun DeslizarCristal(onApagar: () -> Unit) {
         val avance = (x.value / max).coerceIn(0f, 1f)
         val anchoPista = maxWidth
 
-        /* Sombra interior de arriba, como vidrio hundido */
-        Box(Modifier.fillMaxWidth().height(10.dp).background(Brush.verticalGradient(listOf(Color(0x66000000), Color.Transparent))))
-        /* El rastro rojo de cristal que va llenando la pista detrás del mango */
-        Box(
-            Modifier.graphicsLayer { alpha = avance }.fillMaxHeight().width(with(densidad) { (x.value + mangoPx + margen * 2).toDp() }.coerceAtMost(anchoPista))
-                .clip(RoundedCornerShape(50))
-                .background(Brush.horizontalGradient(listOf(ROJO.copy(alpha = 0.10f), ROJO.copy(alpha = 0.45f * avance + 0.1f))))
-        )
-        /* El texto con brillo que lo recorre (como el iPhone), y que se desvanece al deslizar */
-        val estilo = TextStyle(
-            brush = Brush.linearGradient(
-                0f to Color.White.copy(alpha = 0.38f), (barrido - 0.15f).coerceIn(0f, 1f) to Color.White.copy(alpha = 0.38f),
-                barrido.coerceIn(0f, 1f) to Color.White.copy(alpha = 0.95f),
-                (barrido + 0.15f).coerceIn(0f, 1f) to Color.White.copy(alpha = 0.38f), 1f to Color.White.copy(alpha = 0.38f),
-                start = Offset.Zero, end = Offset(with(densidad) { 260.dp.toPx() }, 0f)
-            ),
-            fontFamily = JOST_S, fontSize = 21.sp
-        )
-        Text("Deslizar para apagar", style = estilo,
-            modifier = Modifier.align(Alignment.Center).padding(start = 68.dp).graphicsLayer { alpha = (1f - avance * 1.3f).coerceIn(0f, 1f) })
+        /* La pista (vidrio ahumado, rastro rojo y el texto). Se graba para que el mango de cristal líquido la vea a través */
+        Box(Modifier.matchParentSize().grabarFondoLocal(fondo)) {
+            Box(Modifier.matchParentSize().background(Color(0xFF1C1C1E)).background(Brush.verticalGradient(listOf(Color(0x1FFFFFFF), Color(0x08FFFFFF)))))
+            /* Sombra interior de arriba, como vidrio hundido */
+            Box(Modifier.fillMaxWidth().height(10.dp).background(Brush.verticalGradient(listOf(Color(0x66000000), Color.Transparent))))
+            /* El rastro rojo que va llenando la pista detrás del mango */
+            Box(
+                Modifier.graphicsLayer { alpha = avance }.fillMaxHeight().width(with(densidad) { (x.value + mangoPx + margen * 2).toDp() }.coerceAtMost(anchoPista))
+                    .clip(RoundedCornerShape(50))
+                    .background(Brush.horizontalGradient(listOf(ROJO.copy(alpha = 0.10f), ROJO.copy(alpha = 0.45f * avance + 0.1f))))
+            )
+            /* El texto con brillo que lo recorre (como el iPhone), y que se desvanece al deslizar */
+            val estilo = TextStyle(
+                brush = Brush.linearGradient(
+                    0f to Color.White.copy(alpha = 0.38f), (barrido - 0.15f).coerceIn(0f, 1f) to Color.White.copy(alpha = 0.38f),
+                    barrido.coerceIn(0f, 1f) to Color.White.copy(alpha = 0.95f),
+                    (barrido + 0.15f).coerceIn(0f, 1f) to Color.White.copy(alpha = 0.38f), 1f to Color.White.copy(alpha = 0.38f),
+                    start = Offset.Zero, end = Offset(with(densidad) { 260.dp.toPx() }, 0f)
+                ),
+                fontFamily = JOST_S, fontSize = 21.sp
+            )
+            Text("Deslizar para apagar", style = estilo,
+                modifier = Modifier.align(Alignment.Center).padding(start = 68.dp).graphicsLayer { alpha = (1f - avance * 1.3f).coerceIn(0f, 1f) })
+        }
 
-        /* El mango de vidrio */
-        Box(
-            Modifier
-                .offset { IntOffset((x.value + margen).roundToInt(), margen.roundToInt()) }
-                .size(68.dp)
-                .graphicsLayer {
-                    scaleX = 1f + estira.value; scaleY = 1f - estira.value * 0.45f
-                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0.5f)
-                }
-                .shadow(14.dp, CircleShape, ambientColor = Color.Black, spotColor = Color.Black)
-                .clip(CircleShape)
-                .background(Brush.verticalGradient(listOf(Color(0xFF4A4A4E), Color(0xFF2A2A2D))))
-                .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.32f), Color.Transparent), center = Offset(with(densidad) { 34.dp.toPx() }, with(densidad) { 9.dp.toPx() }), radius = with(densidad) { 34.dp.toPx() }))
-                .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.28f), Color.White.copy(alpha = 0.06f))), CircleShape)
-                .pointerInput(max) {
-                    detectHorizontalDragGestures(
-                        onDragEnd = {
-                            alcance.launch {
-                                if (x.value >= max * 0.8f) {
-                                    x.animateTo(max, tween(120))
-                                    if (!listo) { listo = true; vibra.performHapticFeedback(HapticFeedbackType.LongPress); onApagar() }
-                                } else x.animateTo(0f, spring(dampingRatio = 0.62f, stiffness = Spring.StiffnessMediumLow))
-                            }
-                            alcance.launch { estira.animateTo(0f, spring(dampingRatio = 0.4f, stiffness = Spring.StiffnessMedium)) }
-                        },
-                        onDragCancel = {
-                            alcance.launch { x.animateTo(0f, spring(dampingRatio = 0.62f)) }
-                            alcance.launch { estira.animateTo(0f, spring(dampingRatio = 0.4f)) }
-                        }
-                    ) { cambio, d ->
-                        cambio.consume()
-                        alcance.launch { x.snapTo((x.value + d).coerceIn(0f, max)) }
-                        alcance.launch { estira.snapTo((abs(d) / 60f).coerceAtMost(0.16f)); estira.animateTo(0f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow)) }
+        /* El mango: una gota de cristal líquido (Android 13+) que dobla y aumenta lo que pasa por debajo,
+           crece un poquito al agarrarla y se estira al moverla. En Android viejo, vidrio de siempre */
+        androidx.compose.runtime.CompositionLocalProvider(LocalFondoLocal provides fondo) {
+            Box(
+                Modifier
+                    .offset { IntOffset((x.value + margen).roundToInt(), margen.roundToInt()) }
+                    .size(68.dp)
+                    .graphicsLayer {
+                        val g = 1f + 0.12f * agarre.value
+                        scaleX = g * (1f + estira.value); scaleY = g * (1f - estira.value * 0.45f)
                     }
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Box(Modifier.size(26.dp).clip(RoundedCornerShape((5 + 8 * avance).dp)).background(Color.White))
+                    .shadow(14.dp, CircleShape, ambientColor = Color.Black, spotColor = Color.Black)
+                    .pointerInput(max) {
+                        detectHorizontalDragGestures(
+                            onDragStart = { alcance.launch { agarre.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMedium)) } },
+                            onDragEnd = {
+                                alcance.launch {
+                                    if (x.value >= max * 0.8f) {
+                                        x.animateTo(max, tween(120))
+                                        if (!listo) { listo = true; vibra.performHapticFeedback(HapticFeedbackType.LongPress); onApagar() }
+                                    } else x.animateTo(0f, spring(dampingRatio = 0.62f, stiffness = Spring.StiffnessMediumLow))
+                                }
+                                alcance.launch { estira.animateTo(0f, spring(dampingRatio = 0.4f, stiffness = Spring.StiffnessMedium)) }
+                                alcance.launch { agarre.animateTo(0f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow)) }
+                            },
+                            onDragCancel = {
+                                alcance.launch { x.animateTo(0f, spring(dampingRatio = 0.62f)) }
+                                alcance.launch { estira.animateTo(0f, spring(dampingRatio = 0.4f)) }
+                                alcance.launch { agarre.animateTo(0f, spring(dampingRatio = 0.5f)) }
+                            }
+                        ) { cambio, d ->
+                            cambio.consume()
+                            alcance.launch { x.snapTo((x.value + d).coerceIn(0f, max)) }
+                            alcance.launch { estira.snapTo((abs(d) / 60f).coerceAtMost(0.16f)); estira.animateTo(0f, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow)) }
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                val centro = with(densidad) { Offset(34.dp.toPx(), 34.dp.toPx()) }
+                val liquido = CristalLiquido(CircleShape, 34.dp, Color(0xFF2A2A2D), toque = { centro }, fuerza = { agarre.value }, banda = 14.dp)
+                if (!liquido) Box(
+                    Modifier.matchParentSize().clip(CircleShape)
+                        .background(Brush.verticalGradient(listOf(Color(0xFF4A4A4E), Color(0xFF2A2A2D))))
+                        .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.32f), Color.Transparent), center = Offset(with(densidad) { 34.dp.toPx() }, with(densidad) { 9.dp.toPx() }), radius = with(densidad) { 34.dp.toPx() }))
+                )
+                /* Reflejo de arriba y borde de luz, encima del cristal */
+                Box(Modifier.matchParentSize().clip(CircleShape)
+                    .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent), center = Offset(with(densidad) { 34.dp.toPx() }, with(densidad) { 8.dp.toPx() }), radius = with(densidad) { 28.dp.toPx() }))
+                    .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.34f), Color.White.copy(alpha = 0.06f))), CircleShape))
+                Box(Modifier.size(26.dp).clip(RoundedCornerShape((5 + 8 * avance).dp)).background(Color.White))
+            }
         }
     }
 }

@@ -52,4 +52,21 @@ class CapturasTest {
         Alarmas.lista += Alarma(2, 9, 30, 96, false, "")
         foto("alarmas") { PantallaAlarmas("Reloj" to -1, "Música" to 6) }
     }
+
+    private val hora = java.util.Calendar.getInstance().apply { set(2026, 10, 23, 10, 9, 30) }.timeInMillis
+
+    @Test @Config(qualifiers = "w891dp-h411dp-xhdpi")
+    fun fechaAnalogica() { Variantes.fechaDigital = false; foto("fecha_analogica") { PantallaFecha(hora) } }
+
+    @Test @Config(qualifiers = "w891dp-h411dp-xhdpi")
+    fun fechaDigital() { Variantes.fechaDigital = true; foto("fecha_digital") { PantallaFecha(hora) } }
+
+    @Test @Config(qualifiers = "w891dp-h411dp-xhdpi")
+    fun musicaHorizontal() { Variantes.musicaDigital = false; foto("musica_horizontal") { PantallaMusica(hora) } }
+
+    @Test @Config(qualifiers = "w411dp-h891dp-xhdpi")
+    fun musicaVertical() { Variantes.musicaDigital = true; foto("musica_vertical") { PantallaMusica(hora) } }
+
+    @Test @Config(qualifiers = "w891dp-h411dp-xhdpi")
+    fun grandeAzul() { Variantes.colorGrande = 2; foto("grande_azul") { PantallaHoraGrande(hora) } }
 }

@@ -125,7 +125,11 @@ fun PantallaMusica(ahora: Long) {
     Encabezado("Música", null, "Alarmas" to IR_ALARMAS, tinta)
     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
         val horizontal = maxWidth > maxHeight
-        val lado = (if (horizontal) min(maxHeight.value * 0.82f, maxWidth.value * 0.48f) else min(maxWidth.value * 0.85f, maxHeight.value * 0.5f)).dp
+        val lado = (if (horizontal) min(maxHeight.value * 0.78f, maxWidth.value * 0.3f) else min(maxWidth.value * 0.52f, maxHeight.value * 0.3f)).dp
+        /* El reloj de Música: tocarlo cambia entre analógico y digital, como la original */
+        val reloj: @Composable () -> Unit = {
+            RelojCambiable(ahora, Variantes.musicaDigital, lado * 0.92f, { Variantes.musicaDigital = !Variantes.musicaDigital; Variantes.guardar(ctx) })
+        }
         val tocadiscos: @Composable () -> Unit = {
             Box(Modifier.size(lado), contentAlignment = Alignment.Center) {
                 /* Base de madera */
@@ -158,9 +162,6 @@ fun PantallaMusica(ahora: Long) {
         }
         val info: @Composable (Modifier) -> Unit = { m ->
             Column(m.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                val c = Calendar.getInstance().apply { timeInMillis = ahora }
-                Text("%d:%02d".format(c.get(Calendar.HOUR).let { if (it == 0) 12 else it }, c.get(Calendar.MINUTE)), color = tinta.copy(alpha = 0.6f), fontFamily = familiaDigitos(), fontSize = 22.sp)
-                Spacer(Modifier.height(10.dp))
                 if (!ok) {
                     Text("Para ver lo que suena, dale permiso a WhyClock", color = tinta, fontFamily = INTER_M, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(12.dp))
@@ -190,11 +191,13 @@ fun PantallaMusica(ahora: Long) {
                 }
             }
         }
+        /* Tres zonas, como la original: reloj, tocadiscos y canción */
         if (horizontal) Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { reloj() }
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { tocadiscos() }
             info(Modifier.weight(1f))
-        } else Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            tocadiscos()
+        } else Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) { reloj(); tocadiscos() }
             info(Modifier.fillMaxWidth())
         }
     }

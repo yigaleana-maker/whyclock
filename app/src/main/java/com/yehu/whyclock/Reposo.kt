@@ -61,6 +61,7 @@ class Reposo : DreamService(), LifecycleOwner, SavedStateRegistryOwner {
         isScreenBright = true
         Ajustes.cargar(this)
         Alarmas.cargar(this)
+        Variantes.cargar(this)
         val vista = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@Reposo)
             setViewTreeSavedStateRegistryOwner(this@Reposo)

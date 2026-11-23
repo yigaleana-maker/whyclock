@@ -109,7 +109,21 @@ fun PantallaFecha(ahora: Long) {
                 Box(Modifier.width(lado * 0.5f).padding(top = 6.dp)) { CalendarioMes(ahora, c.copy(calendario = c.dTinta)) }
             }
         }
-        val derecha: @Composable (Modifier) -> Unit = { m -> Canvas(m) { dibujarDigitalPublico(ahora, c, tf) } }
+        /* A la derecha la cara grande o la regla digital; se cambia tocando el reloj o con el chip, como la original */
+        val ctxF = LocalContext.current
+        val derecha: @Composable (Modifier) -> Unit = { m ->
+            BoxWithConstraints(m, contentAlignment = Alignment.Center) {
+                val ladoR = min(maxWidth.value * 0.82f, maxHeight.value * 0.74f).dp
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    RelojCambiable(ahora, Variantes.fechaDigital, ladoR, { Variantes.fechaDigital = !Variantes.fechaDigital; Variantes.guardar(ctxF) }, pista = false)
+                    BotonExpresivo(c.dTinta.copy(alpha = 0.08f), Modifier.padding(top = 8.dp).height(36.dp), onClick = { Variantes.fechaDigital = !Variantes.fechaDigital; Variantes.guardar(ctxF) }) {
+                        Cambiante(if (Variantes.fechaDigital) "Analógico" else "Digital") {
+                            Text(it, color = c.dTinta, fontFamily = INTER, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 18.dp))
+                        }
+                    }
+                }
+            }
+        }
         if (horizontal) Row(Modifier.fillMaxSize()) {
             izquierda(Modifier.weight(1f).fillMaxHeight())
             derecha(Modifier.weight(1f).fillMaxHeight())
@@ -177,26 +191,34 @@ fun PantallaHoraGrande(ahora: Long) {
     val ctx = LocalContext.current
     val fondo = if (Ajustes.oscuro) Color(0xFF0A0908) else Color(0xFFEFEEE9)
     val proxima = remember(ahora / 30000) { Alarmas.proximaTexto(ctx) }
+    /* Tocar la hora cambia su color (Rojo, Ámbar, Azul, Coral, Tinta), como la original */
+    val pal = PALETA_GRANDE[Variantes.colorGrande.coerceIn(0, PALETA_GRANDE.size - 1)]
+    val c1 by androidx.compose.animation.animateColorAsState(if (Ajustes.oscuro) pal.c1.second else pal.c1.first, tween(500), label = "c1")
+    val c2 by androidx.compose.animation.animateColorAsState(if (Ajustes.oscuro) pal.c2.second else pal.c2.first, tween(500), label = "c2")
     BoxWithConstraints(Modifier.fillMaxSize().background(fondo)) {
         val tam = min(maxWidth.value * 0.3f, maxHeight.value * 0.62f)
         Text(
             "%02d:%02d".format(ca.get(Calendar.HOUR_OF_DAY), ca.get(Calendar.MINUTE)),
-            color = Color(0xFFE53328), fontFamily = f, fontSize = tam.sp, lineHeight = tam.sp,
-            modifier = Modifier.align(Alignment.Center)
+            color = c1, fontFamily = f, fontSize = tam.sp, lineHeight = tam.sp,
+            modifier = Modifier.align(Alignment.Center).pulsable(hundir = 0.96f) {
+                Variantes.colorGrande = (Variantes.colorGrande + 1) % PALETA_GRANDE.size; Variantes.guardar(ctx)
+            }
         )
+        Text("Toca la hora para cambiar su color", color = c1.copy(alpha = 0.4f), fontFamily = INTER, fontSize = 12.sp,
+            modifier = Modifier.align(Alignment.BottomStart).padding(start = 26.dp, bottom = 22.dp))
         Row(Modifier.align(Alignment.TopEnd).padding(top = 22.dp, end = 34.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(SimpleDateFormat("EEE d", ES).format(ahora).replace(".", "").uppercase(), color = Color(0xFFF2B233), fontFamily = f, fontSize = 22.sp)
+            Text(SimpleDateFormat("EEE d", ES).format(ahora).replace(".", "").uppercase(), color = c2, fontFamily = f, fontSize = 22.sp)
             Spacer(Modifier.width(12.dp))
             /* Un anillito que se llena con los segundos */
             Canvas(Modifier.size(24.dp)) {
                 val g = 3.dp.toPx()
-                drawCircle(Color(0x33F2B233), radius = size.minDimension / 2 - g / 2, style = Stroke(g))
-                drawArc(Color(0xFFF2B233), -90f, 360f * (ca.get(Calendar.SECOND) / 60f), false,
+                drawCircle(c2.copy(alpha = 0.2f), radius = size.minDimension / 2 - g / 2, style = Stroke(g))
+                drawArc(c2, -90f, 360f * (ca.get(Calendar.SECOND) / 60f), false,
                     topLeft = Offset(g / 2, g / 2), size = Size(size.width - g, size.height - g), style = Stroke(g, cap = StrokeCap.Round))
             }
         }
         if (proxima != null) Text(
-            "⏰ $proxima", color = Color(0xFFF2B233).copy(alpha = 0.8f), fontFamily = INTER, fontWeight = FontWeight.Bold, fontSize = 15.sp,
+            "⏰ $proxima", color = c2.copy(alpha = 0.8f), fontFamily = INTER, fontWeight = FontWeight.Bold, fontSize = 15.sp,
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 26.dp)
         )
     }

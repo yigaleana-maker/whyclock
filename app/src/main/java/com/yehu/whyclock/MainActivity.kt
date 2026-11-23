@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Ajustes.cargar(this)
+        Variantes.cargar(this)
         Alarmas.cargar(this)
         Alarmas.programar(this)
         Temporizador.cargar(this)
