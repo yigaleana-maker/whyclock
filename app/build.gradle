@@ -1,0 +1,70 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
+}
+
+android {
+    namespace 'com.yehu.whyclock'
+    compileSdk 36
+
+    defaultConfig {
+        /* Nombre nuevo: se puede tener junto al WhyClock viejo mientras lo pruebas */
+        applicationId 'com.yehu.whyclock'
+        minSdk 26
+        targetSdk 36
+        def corrida = (System.getenv('GITHUB_RUN_NUMBER') ?: '0').toInteger()
+        versionCode corrida + 1
+        versionName "3.0.$corrida"
+    }
+
+    /* App solo para ti: se firma siempre con la misma llave (llega del secreto WHYCLOCK_LLAVE a app/firma),
+       así cada versión se instala encima de la anterior. Sin el secreto, se usa la de depuración del momento */
+    def llave = file('firma/llave.keystore')
+    signingConfigs {
+        fija {
+            storeFile llave.exists() ? llave : file("${System.getProperty('user.home')}/.android/debug.keystore")
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig llave.exists() ? signingConfigs.fija : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    buildFeatures {
+        compose true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.activity:activity-compose:1.9.3'
+    implementation platform('androidx.compose:compose-bom:2024.12.01')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.foundation:foundation'
+    implementation 'androidx.compose.material3:material3'
+}
