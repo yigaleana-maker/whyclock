@@ -125,10 +125,10 @@ fun PantallaMusica(ahora: Long) {
     Encabezado("Música", null, "Alarmas" to IR_ALARMAS, tinta)
     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
         val horizontal = maxWidth > maxHeight
-        val lado = (if (horizontal) min(maxHeight.value * 0.78f, maxWidth.value * 0.3f) else min(maxWidth.value * 0.52f, maxHeight.value * 0.3f)).dp
+        val lado = (if (horizontal) min(maxHeight.value * 0.78f, maxWidth.value * 0.3f) else min(maxWidth.value * 0.62f, maxHeight.value * 0.3f)).dp
         /* El reloj de Música: tocarlo cambia entre analógico y digital, como la original */
         val reloj: @Composable () -> Unit = {
-            RelojCambiable(ahora, Variantes.musicaDigital, lado * 0.92f, { Variantes.musicaDigital = !Variantes.musicaDigital; Variantes.guardar(ctx) })
+            RelojCambiable(ahora, Variantes.musicaDigital, if (horizontal) lado * 0.92f else lado * 0.8f, { Variantes.musicaDigital = !Variantes.musicaDigital; Variantes.guardar(ctx) })
         }
         val tocadiscos: @Composable () -> Unit = {
             Box(Modifier.size(lado), contentAlignment = Alignment.Center) {
@@ -197,7 +197,7 @@ fun PantallaMusica(ahora: Long) {
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { tocadiscos() }
             info(Modifier.weight(1f))
         } else Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) { reloj(); tocadiscos() }
+            reloj(); tocadiscos()
             info(Modifier.fillMaxWidth())
         }
     }

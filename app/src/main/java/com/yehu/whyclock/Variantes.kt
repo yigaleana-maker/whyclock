@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -110,7 +111,7 @@ fun RelojCambiable(ahora: Long, digital: Boolean, lado: Dp, onCambio: () -> Unit
             (fadeIn(tween(300)) + scaleIn(spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessMediumLow), initialScale = 0.82f)) togetherWith
                 (fadeOut(tween(180)) + scaleOut(tween(220), targetScale = 1.1f))
         }, label = "reloj", modifier = Modifier.size(lado).pulsable(hundir = 0.95f, onClick = onCambio)) { dig ->
-            Canvas(Modifier.fillMaxSize()) {
+            Canvas(Modifier.fillMaxSize().clipToBounds()) {
                 if (dig) dibujarDigitalPublico(ahora, c, tf) else caraGrande(ahora, c.dTinta, c.dMarcaTenue, c.acento, tf)
             }
         }
