@@ -39,7 +39,8 @@ class CapturasTest {
 
     @Test @Config(qualifiers = "w411dp-h891dp-xhdpi")
     fun temporizadorCorriendo() {
-        Temporizador.total = 300_000L; Temporizador.fin = System.currentTimeMillis() + 190_000L
+        androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>().getSharedPreferences("whyclock_alarmas", 0).edit()
+            .putLong("total", 300_000L).putLong("fin", System.currentTimeMillis() + 190_000L).commit()
         foto("temporizador_corriendo") { PantallaTemporizador("Música" to 6, "Alarmas" to IR_ALARMAS) }
     }
 

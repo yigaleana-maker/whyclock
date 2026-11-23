@@ -380,6 +380,7 @@ fun DialogoPermisos(onCerrar: () -> Unit) {
             if (!Permisos.notificaciones(ctx)) Triple("Notificaciones", "Para el temporizador y la alarma sonando") { Permisos.abrirNotificaciones(ctx) } else null,
             if (!Permisos.pantallaCompleta(ctx)) Triple("Pantalla completa", "Para que la alarma aparezca aunque el teléfono esté bloqueado") { Permisos.abrirPantallaCompleta(ctx) } else null,
             if (!Permisos.exactas(ctx)) Triple("Alarmas exactas", "Para que suenen al minuto") { Permisos.abrirExactas(ctx) } else null,
+            if (!Permisos.encima(ctx)) Triple("Mostrar sobre otras apps", "Para que la pantalla de alarma salga aunque estés usando el teléfono") { Permisos.abrirEncima(ctx) } else null,
             if (!Permisos.bateria(ctx)) Triple("Sin restricción de batería", "Para que Android no la duerma") { Permisos.abrirBateria(ctx) } else null
         )
     }

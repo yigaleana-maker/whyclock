@@ -106,11 +106,12 @@ class AlarmaActivity : ComponentActivity() {
                 posponerInicial = prefs.getInt("posponer", 10),
                 onPosponer = { min ->
                     prefs.edit().putInt("posponer", min).apply()
-                    runCatching { startService(Intent(this, Sonando::class.java).setAction("posponer").putExtra("min", min)) }
+                    Alarmas.posponer(this, Sonando.nombre, Sonando.tono, min)
+                    Sonando.apagar(this)
                     finish()
                 },
                 onDetener = {
-                    runCatching { startService(Intent(this, Sonando::class.java).setAction("detener")) }
+                    Sonando.apagar(this)
                     finish()
                 }
             )
@@ -120,6 +121,7 @@ class AlarmaActivity : ComponentActivity() {
 
 /* Como la original: negro, el relojito gris y "Alarma" en rojo, la hora enorme en blanco, Posponer por 5/10/15/20,
    el botón rojo Posponer y "Deslizar para apagar". En horizontal: Detener y Posponer lado a lado */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 internal fun PantallaSonando(hora: String, temporizador: Boolean, nombre: String?, posponerInicial: Int, onPosponer: (Int) -> Unit, onDetener: () -> Unit) {
     val f = familiaDigitos()
@@ -133,7 +135,7 @@ internal fun PantallaSonando(hora: String, temporizador: Boolean, nombre: String
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black).padding(horizontal = 24.dp, vertical = 24.dp), contentAlignment = Alignment.Center) {
         val horizontal = maxWidth > maxHeight
         /* La hora, del tamaño que quepa a lo ancho (5 caracteres) */
-        val porAncho = (if (horizontal) maxWidth.value * 0.55f else maxWidth.value) / 3.4f
+        val porAncho = (if (horizontal) maxWidth.value * 0.55f else maxWidth.value) / 4.1f
         val tamHora = if (horizontal) min(porAncho, maxHeight.value * 0.34f) else min(porAncho, 200f)
 
         val etiqueta: @Composable () -> Unit = {
@@ -150,8 +152,8 @@ internal fun PantallaSonando(hora: String, temporizador: Boolean, nombre: String
             if (nombre != null) Text(nombre, color = Color.White.copy(alpha = 0.65f), fontFamily = JOST_S, fontSize = 20.sp, maxLines = 1)
         }
         val duraciones: @Composable () -> Unit = {
-            if (!temporizador) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Posponer por", color = Color.White.copy(alpha = 0.55f), fontFamily = JOST_S, fontSize = 14.sp)
+            if (!temporizador) androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Posponer por", color = Color.White.copy(alpha = 0.55f), fontFamily = JOST_S, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterVertically))
                 listOf(5, 10, 15, 20).forEach { d ->
                     val on = d == min
                     val fondo by animateColorAsState(if (on) ROJO else Color.Transparent, label = "d")
@@ -241,10 +243,9 @@ private fun DeslizarCristal(onApagar: () -> Unit) {
         Box(Modifier.fillMaxWidth().height(10.dp).background(Brush.verticalGradient(listOf(Color(0x66000000), Color.Transparent))))
         /* El rastro rojo de cristal que va llenando la pista detrás del mango */
         Box(
-            Modifier.fillMaxHeight().width(with(densidad) { (x.value + mangoPx + margen * 2).toDp() }.coerceAtMost(anchoPista))
+            Modifier.graphicsLayer { alpha = avance }.fillMaxHeight().width(with(densidad) { (x.value + mangoPx + margen * 2).toDp() }.coerceAtMost(anchoPista))
                 .clip(RoundedCornerShape(50))
                 .background(Brush.horizontalGradient(listOf(ROJO.copy(alpha = 0.10f), ROJO.copy(alpha = 0.45f * avance + 0.1f))))
-                .graphicsLayer { alpha = avance }
         )
         /* El texto con brillo que lo recorre (como el iPhone), y que se desvanece al deslizar */
         val estilo = TextStyle(

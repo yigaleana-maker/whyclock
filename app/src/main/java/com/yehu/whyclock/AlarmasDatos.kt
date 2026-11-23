@@ -221,6 +221,11 @@ class Receptor : BroadcastReceiver() {
                 val s = Intent(ctx, Sonando::class.java).putExtras(intent)
                 runCatching { if (Build.VERSION.SDK_INT >= 26) ctx.startForegroundService(s) else ctx.startService(s) }
             }
+            "detener_alarma" -> Sonando.apagar(ctx)
+            "posponer_alarma" -> {
+                Alarmas.posponer(ctx, Sonando.nombre, Sonando.tono, ctx.getSharedPreferences("whyclock_alarmas", Context.MODE_PRIVATE).getInt("posponer", 10))
+                Sonando.apagar(ctx)
+            }
             "cancelar_temporizador" -> { Temporizador.cargar(ctx); Temporizador.cancelar(ctx) }
             "pausar" -> { Temporizador.cargar(ctx); Temporizador.pausar(ctx) }
             "reanudar" -> { Temporizador.cargar(ctx); Temporizador.seguir(ctx) }
@@ -240,6 +245,13 @@ class Sonando : Service() {
         var esTemporizador by mutableStateOf(false)
         /* La hora a la que sonó (la pantalla la muestra fija, como la original) */
         var hora by mutableStateOf("")
+
+        /* Apagar siempre funciona: se detiene el servicio directamente (y con él el sonido) */
+        fun apagar(ctx: Context) {
+            activo = false
+            runCatching { ctx.stopService(Intent(ctx, Sonando::class.java)) }
+            runCatching { ctx.getSystemService(NotificationManager::class.java).cancel(8) }
+        }
     }
     private var reproductor: MediaPlayer? = null
     private var vibrador: Vibrator? = null
@@ -265,25 +277,43 @@ class Sonando : Service() {
         val pantalla = PendingIntent.getActivity(this, 200, Intent(this, AlarmaActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         fun boton(texto: String, que: String, cod: Int) = Notification.Action.Builder(null, texto,
-            PendingIntent.getService(this, cod, Intent(this, Sonando::class.java).setAction(que).putExtra("min", getSharedPreferences("whyclock_alarmas", MODE_PRIVATE).getInt("posponer", 10)), PendingIntent.FLAG_IMMUTABLE)).build()
+            PendingIntent.getBroadcast(this, cod, Intent(this, Receptor::class.java).setAction(que), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)).build()
         val n = Notification.Builder(this, Alarmas.CANAL_SONANDO)
             .setSmallIcon(R.drawable.ic_noti)
             .setContentTitle(if (esTemporizador) "Se acabó el tiempo" else nombre.ifBlank { "Alarma" })
             .setContentText(SimpleDateFormat("H:mm", Locale.getDefault()).format(System.currentTimeMillis()))
             .setCategory(Notification.CATEGORY_ALARM).setVisibility(Notification.VISIBILITY_PUBLIC)
             .setOngoing(true).setFullScreenIntent(pantalla, true).setContentIntent(pantalla)
-            .apply { if (!esTemporizador) addAction(boton("Posponer", "posponer", 201)) }
-            .addAction(boton("Detener", "detener", 202))
+            .apply { if (!esTemporizador) addAction(boton("Posponer", "posponer_alarma", 201)) }
+            .addAction(boton("Detener", "detener_alarma", 202))
             .build()
         if (Build.VERSION.SDK_INT >= 29) startForeground(8, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK) else startForeground(8, n)
         activo = true
-        /* Si la app está abierta o la pantalla apagada, abre directo la pantalla de alarma */
-        runCatching { startActivity(Intent(this, AlarmaActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        abrirPantalla()
         if (reproductor == null) sonar()
         /* Si nadie la apaga, se calla sola a los 10 minutos */
         mano.removeCallbacksAndMessages(null)
         mano.postDelayed({ parar() }, 10 * 60_000L)
         return START_NOT_STICKY
+    }
+
+    /* Abre la pantalla de alarma. Con el teléfono bloqueado la abre la notificación de pantalla completa;
+       si lo estás usando y diste "Mostrar sobre otras apps", se pone una ventanita invisible un instante
+       para que Android deje abrirla encima de lo que estés viendo */
+    private fun abrirPantalla() {
+        val intento = Intent(this, AlarmaActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        var ventana: android.view.View? = null
+        val wm = getSystemService(android.view.WindowManager::class.java)
+        if (Build.VERSION.SDK_INT >= 26 && Settings.canDrawOverlays(this)) runCatching {
+            val v = android.view.View(this)
+            wm.addView(v, android.view.WindowManager.LayoutParams(1, 1, android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE, android.graphics.PixelFormat.TRANSLUCENT))
+            ventana = v
+        }
+        mano.postDelayed({
+            runCatching { startActivity(intento) }
+            mano.postDelayed({ ventana?.let { runCatching { wm.removeView(it) } } }, 2500)
+        }, if (ventana != null) 150 else 0)
     }
 
     private fun sonar() {
@@ -300,17 +330,22 @@ class Sonando : Service() {
         runCatching { vibrador?.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 600, 600), 0)) }
     }
 
-    private fun parar() {
+    /* Calla el sonido y la vibración y suelta todo */
+    private fun limpiar() {
         activo = false
         mano.removeCallbacksAndMessages(null)
-        reproductor?.run { runCatching { stop() }; release() }; reproductor = null
-        vibrador?.cancel()
-        despierto?.let { if (it.isHeld) it.release() }; despierto = null
+        reproductor?.run { runCatching { stop() }; runCatching { release() } }; reproductor = null
+        runCatching { vibrador?.cancel() }
+        despierto?.let { if (it.isHeld) runCatching { it.release() } }; despierto = null
+    }
+
+    private fun parar() {
+        limpiar()
         if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE) else @Suppress("DEPRECATION") stopForeground(true)
         stopSelf()
     }
 
-    override fun onDestroy() { if (activo) parar(); super.onDestroy() }
+    override fun onDestroy() { limpiar(); super.onDestroy() }
 }
 
 /* ——— Permisos que necesitan las alarmas para salir en pantalla completa y sonar a tiempo ——— */
@@ -319,7 +354,12 @@ object Permisos {
     fun notificaciones(ctx: Context) = Build.VERSION.SDK_INT < 33 || ctx.getSystemService(NotificationManager::class.java).areNotificationsEnabled()
     fun bateria(ctx: Context) = ctx.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(ctx.packageName)
     fun exactas(ctx: Context) = Alarmas.puedeExacta(ctx)
-    fun faltan(ctx: Context) = !pantallaCompleta(ctx) || !notificaciones(ctx) || !bateria(ctx) || !exactas(ctx)
+    fun encima(ctx: Context) = Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(ctx)
+    fun faltan(ctx: Context) = !pantallaCompleta(ctx) || !notificaciones(ctx) || !bateria(ctx) || !exactas(ctx) || !encima(ctx)
+
+    fun abrirEncima(ctx: Context) {
+        runCatching { ctx.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + ctx.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    }
 
     fun abrirPantallaCompleta(ctx: Context) {
         if (Build.VERSION.SDK_INT >= 34) runCatching { ctx.startActivity(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:" + ctx.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
