@@ -61,6 +61,7 @@ android {
                 systemProperty 'robolectric.graphicsMode', 'NATIVE'
                 systemProperty 'roborazzi.test.record', 'true'
                 maxHeapSize = '2g'
+                testLogging { exceptionFormat = 'full'; events 'failed'; showStackTraces = true }
             }
         }
     }
