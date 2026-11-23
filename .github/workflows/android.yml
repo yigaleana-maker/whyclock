@@ -32,6 +32,11 @@ jobs:
             printf '%s' "$LLAVE" | tr -d ' \r\n\t' | grep -oE '[A-Za-z0-9+/]{500,}={0,2}' | awk '{ if (length($0) > length(m)) m = $0 } END { print m }' | base64 -d > app/firma/llave.keystore
             echo "Llave: $(stat -c %s app/firma/llave.keystore) bytes"
           fi
+      - name: Capturas de pantalla de prueba
+        continue-on-error: true
+        run: |
+          gradle --no-daemon testDebugUnitTest --tests '*CapturasTest*' || true
+          for f in app/build/capturas/*.png; do echo "=== CAPTURA $(basename $f)"; base64 -w 0 "$f"; echo; echo "=== FIN"; done
       - name: Compilar APK
         run: gradle --no-daemon assembleRelease
       - name: Publicar en Releases

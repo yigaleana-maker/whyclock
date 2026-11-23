@@ -238,6 +238,8 @@ class Sonando : Service() {
         var nombre by mutableStateOf("")
         var tono by mutableStateOf("")
         var esTemporizador by mutableStateOf(false)
+        /* La hora a la que sonó (la pantalla la muestra fija, como la original) */
+        var hora by mutableStateOf("")
     }
     private var reproductor: MediaPlayer? = null
     private var vibrador: Vibrator? = null
@@ -255,6 +257,7 @@ class Sonando : Service() {
         nombre = intent?.getStringExtra("nombre").orEmpty()
         tono = intent?.getStringExtra("tono").orEmpty()
         esTemporizador = id == -2
+        hora = SimpleDateFormat("HH:mm", Locale.getDefault()).format(System.currentTimeMillis())
         Ajustes.cargar(this)
         when { esTemporizador -> Temporizador.termino(this); id > 0 -> Alarmas.yaSono(this, id) }
 
