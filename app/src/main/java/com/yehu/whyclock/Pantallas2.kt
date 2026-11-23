@@ -378,6 +378,7 @@ fun PantallaClima(ahora: Long) {
     BoxWithConstraints(Modifier.fillMaxSize().background(fondo)) {
         val horizontal = maxWidth > maxHeight
         val h = maxHeight.value
+        val w = maxWidth.value
         val clima: @Composable (Modifier) -> Unit = { m ->
             Column(m.clickable { Clima.pedir = true }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 val e = Clima.estado
@@ -402,7 +403,7 @@ fun PantallaClima(ahora: Long) {
         val hora: @Composable (Modifier) -> Unit = { m ->
             Column(m, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 val hh = ca.get(Calendar.HOUR).let { if (it == 0) 12 else it }
-                val t = min(maxWidth.value * (if (horizontal) 0.2f else 0.32f), h * (if (horizontal) 0.34f else 0.2f))
+                val t = min(w * (if (horizontal) 0.2f else 0.32f), h * (if (horizontal) 0.34f else 0.2f))
                 Text("%02d".format(hh), color = tinta, fontFamily = f, fontSize = t.sp, lineHeight = t.sp)
                 Text("%02d".format(ca.get(Calendar.MINUTE)), color = tinta, fontFamily = f, fontSize = t.sp, lineHeight = t.sp)
                 Text(if (ca.get(Calendar.HOUR_OF_DAY) >= 12) "PM" else "AM", color = tinta.copy(alpha = 0.7f), fontFamily = f, fontSize = 18.sp)
