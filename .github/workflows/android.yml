@@ -25,7 +25,12 @@ jobs:
         env:
           LLAVE: ${{ secrets.WHYCLOCK_LLAVE }}
         run: |
-          if [ -n "$LLAVE" ]; then mkdir -p app/firma && echo "$LLAVE" | base64 -d > app/firma/llave.keystore; fi
+          if [ -n "$LLAVE" ]; then
+            mkdir -p app/firma
+            # Se quitan espacios, saltos de línea y comillas que se cuelan al pegarla
+            printf '%s' "$LLAVE" | tr -d ' \r\n\t"' | sed 's/^data:[^,]*,//' | base64 -d -i > app/firma/llave.keystore
+            echo "Llave: $(stat -c %s app/firma/llave.keystore) bytes"
+          fi
       - name: Compilar APK
         run: gradle --no-daemon assembleRelease
       - name: Publicar en Releases
