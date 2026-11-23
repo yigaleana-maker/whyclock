@@ -64,7 +64,7 @@ class Reposo : DreamService(), LifecycleOwner, SavedStateRegistryOwner {
         val vista = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@Reposo)
             setViewTreeSavedStateRegistryOwner(this@Reposo)
-            setContent { Contenido { finish() } }
+            setContent { ConNoche({ b -> window?.let { w -> w.attributes = w.attributes.apply { screenBrightness = b } } }) { Contenido { finish() } } }
         }
         setContentView(vista)
     }

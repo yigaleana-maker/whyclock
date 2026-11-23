@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
             hide(WindowInsetsCompat.Type.systemBars())
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
-        setContent { Pantallas() }
+        setContent { ConNoche({ b -> window.attributes = window.attributes.apply { screenBrightness = b } }) { Pantallas() } }
     }
 }
 
@@ -138,7 +138,8 @@ private fun Pantallas() {
                             .padding(horizontal = 16.dp, vertical = 10.dp)
                     )
                 }
-                chip(if (Ajustes.oscuro) "Modo claro" else "Modo oscuro") { Ajustes.oscuro = !Ajustes.oscuro }
+                chip(if (Ajustes.oscuroElegido) "Modo claro" else "Modo oscuro") { Ajustes.oscuroElegido = !Ajustes.oscuroElegido }
+                chip("Modo noche: " + Ajustes.nombreNoche()) { Ajustes.siguienteNoche() }
                 chip("Letra: " + Ajustes.nombreLetra()) { Ajustes.siguienteLetra() }
                 chip("Ciudad") { Clima.pedir = true; barra = false }
                 chip("Pantalla de reposo") { verReposo = true; barra = false }

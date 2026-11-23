@@ -60,7 +60,11 @@ val OSCURO = Colores(
 /* Lo que eliges en la barra de ajustes (se guarda) */
 object Ajustes {
     private const val PREFS = "whyclock"
-    var oscuro by mutableStateOf(false)
+    /* Lo que elegiste en la barra; de noche (modo noche) se ve oscuro aunque hayas elegido claro */
+    var oscuroElegido by mutableStateOf(false)
+    val oscuro get() = oscuroElegido || Noche.activa
+    /* Modo noche: "auto" (con el sensor de luz), "siempre" o "apagado" */
+    var noche by mutableStateOf("auto")
     /* "original" (Bruno Ace), "concert" o "oswald" (condensada) */
     var letra by mutableStateOf("original")
     var suave by mutableStateOf(true)
@@ -70,7 +74,8 @@ object Ajustes {
 
     fun cargar(ctx: Context) {
         val p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        oscuro = p.getBoolean("oscuro", false)
+        oscuroElegido = p.getBoolean("oscuro", false)
+        noche = p.getString("noche", "auto") ?: "auto"
         letra = p.getString("letra", "original") ?: "original"
         suave = p.getBoolean("suave", true)
         pagina = p.getInt("pagina", 0)
@@ -79,10 +84,13 @@ object Ajustes {
 
     fun guardar(ctx: Context) {
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putBoolean("oscuro", oscuro).putString("letra", letra).putBoolean("suave", suave).putInt("pagina", pagina).putInt("reposo", reposo).apply()
+            .putBoolean("oscuro", oscuroElegido).putString("noche", noche).putString("letra", letra).putBoolean("suave", suave).putInt("pagina", pagina).putInt("reposo", reposo).apply()
     }
 
     fun colores() = if (oscuro) OSCURO else CLARO
+
+    fun nombreNoche() = when (noche) { "siempre" -> "siempre"; "apagado" -> "apagado"; else -> "automático" }
+    fun siguienteNoche() { noche = when (noche) { "auto" -> "siempre"; "siempre" -> "apagado"; else -> "auto" } }
 
     fun nombreLetra() = when (letra) { "concert" -> "Concert"; "oswald" -> "Condensada"; else -> "Original" }
     fun siguienteLetra() { letra = when (letra) { "original" -> "concert"; "concert" -> "oswald"; else -> "original" } }
