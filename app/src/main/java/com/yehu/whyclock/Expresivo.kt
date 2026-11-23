@@ -80,11 +80,11 @@ fun BotonExpresivo(
 
 /* Anillo expresivo: el progreso es una línea ondulada que se mueve (fase) y la pista es lisa, con un huequito entre las dos.
    amplitud 0 = liso (en pausa). frac de 0 a 1 */
-fun DrawScope.anilloExpresivo(frac: Float, fase: Float, amplitud: Float, pista: Color, progreso: Color, grosor: Float, ondas: Int = 12) {
+fun DrawScope.anilloExpresivo(frac: Float, fase: Float, amplitud: Float, pista: Color, progreso: Color, grosor: Float, ondas: Int = 22) {
     val r = min(size.width, size.height) / 2 - grosor * 1.6f
     val c = Offset(size.width / 2, size.height / 2)
     val hueco = (grosor * 1.8f) / (2 * PI * r).toFloat()
-    val a = amplitud * grosor * 0.9f
+    val a = amplitud * grosor * 0.42f
     val f = frac.coerceIn(0f, 1f)
     /* Pista: lo que falta */
     if (f < 1f - hueco * 2) {
