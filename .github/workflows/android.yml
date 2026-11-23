@@ -28,6 +28,8 @@ jobs:
           if [ -n "$LLAVE" ]; then
             mkdir -p app/firma
             # Se quitan espacios, saltos de línea y comillas que se cuelan al pegarla
+            # Diagnóstico sin mostrar la llave: tamaño, líneas y cuántos caracteres no son base64
+            echo "Secreto: ${#LLAVE} caracteres, $(printf '%s' "$LLAVE" | wc -l) saltos, $(printf '%s' "$LLAVE" | tr -d 'A-Za-z0-9+/=\r\n ' | wc -c) raros, empieza con '$(printf '%s' "$LLAVE" | head -c 4)'"
             printf '%s' "$LLAVE" | tr -d ' \r\n\t"' | sed 's/^data:[^,]*,//' | base64 -d -i > app/firma/llave.keystore
             echo "Llave: $(stat -c %s app/firma/llave.keystore) bytes"
           fi
