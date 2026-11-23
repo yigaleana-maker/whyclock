@@ -55,6 +55,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Ajustes.cargar(this)
+        Alarmas.cargar(this)
+        Alarmas.programar(this)
+        Temporizador.cargar(this)
+        if (android.os.Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
         enableEdgeToEdge()
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -65,7 +69,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private const val PAGINAS = 3
+private const val PAGINAS = 9
 private val INTER = FontFamily(Font(R.font.inter_600, FontWeight.SemiBold))
 
 @androidx.compose.runtime.Composable
@@ -76,6 +80,8 @@ private fun Pantallas() {
     val alcance = rememberCoroutineScope()
     var barra by remember { mutableStateOf(false) }
     var toques by remember { mutableIntStateOf(0) }
+    var verAlarmas by remember { mutableStateOf(false) }
+    var verTemporizador by remember { mutableStateOf(false) }
     /* La barra de ajustes aparece al tocar y se esconde sola */
     LaunchedEffect(barra, toques) { if (barra) { delay(4500); barra = false } }
     LaunchedEffect(estado) { snapshotFlow { estado.currentPage }.collect { Ajustes.pagina = it; Ajustes.guardar(ctx) } }
@@ -93,11 +99,7 @@ private fun Pantallas() {
         }
     ) {
         HorizontalPager(state = estado, modifier = Modifier.fillMaxSize()) { p ->
-            when (p) {
-                0 -> RelojAnalogico(ahora)
-                1 -> RelojDigital(ahora)
-                else -> RelojDual(ahora)
-            }
+            Pagina(p, ahora)
         }
         AnimatedVisibility(
             visible = barra,
@@ -119,8 +121,30 @@ private fun Pantallas() {
                 }
                 chip(if (Ajustes.oscuro) "Modo claro" else "Modo oscuro") { Ajustes.oscuro = !Ajustes.oscuro }
                 chip("Letra: " + Ajustes.nombreLetra()) { Ajustes.siguienteLetra() }
+                chip("Alarmas") { verAlarmas = true; barra = false }
+                chip("Temporizador") { verTemporizador = true; barra = false }
+                chip("Ciudad") { Clima.pedir = true; barra = false }
                 chip(if (Ajustes.suave) "Movimiento suave" else "Movimiento por pasos") { Ajustes.suave = !Ajustes.suave }
             }
         }
+        if (verAlarmas) DialogoAlarmas { verAlarmas = false }
+        if (verTemporizador) DialogoTemporizador { verTemporizador = false }
+        DialogoCiudad()
+    }
+}
+
+/* Las nueve pantallas, en el orden del original */
+@androidx.compose.runtime.Composable
+fun Pagina(p: Int, ahora: Long) {
+    when (p) {
+        0 -> RelojAnalogico(ahora)
+        1 -> RelojDigital(ahora)
+        2 -> RelojDual(ahora)
+        3 -> PantallaClima(ahora)
+        4 -> PantallaFecha(ahora)
+        5 -> PantallaCalendario(ahora)
+        6 -> PantallaMusica(ahora)
+        7 -> PantallaHoraGrande(ahora)
+        else -> PantallaRespira()
     }
 }

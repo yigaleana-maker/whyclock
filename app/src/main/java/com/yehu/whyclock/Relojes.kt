@@ -262,3 +262,6 @@ fun CalendarioMes(ahora: Long, c: Colores) {
         }
     }
 }
+
+/* El reloj digital con su regla, para otras pantallas (versión compacta) */
+fun DrawScope.dibujarDigitalPublico(ahora: Long, c: Colores, tf: android.graphics.Typeface) = dibujarDigital(ahora, c, tf, compacto = true)
