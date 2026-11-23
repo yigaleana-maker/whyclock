@@ -124,7 +124,8 @@ fun BoxScope.CristalLiquido(forma: Shape, radio: Dp, base: Color, toque: () -> O
     val capa = local?.capa ?: FondoCristal.capa
     if (android.os.Build.VERSION.SDK_INT < 33 || capa == null) return false
     var mio by remember { mutableStateOf(Offset.Zero) }
-    val shader = remember { android.graphics.RuntimeShader(SHADER_LENTE) }
+    /* Si el teléfono no puede compilar la lente, no se rompe nada: se usa el vidrio de siempre */
+    val shader = remember { runCatching { android.graphics.RuntimeShader(SHADER_LENTE) }.getOrNull() } ?: return false
     /* El brillo del borde sigue la inclinación del teléfono, como un reflejo de verdad */
     val ctxLuz = androidx.compose.ui.platform.LocalContext.current
     androidx.compose.runtime.DisposableEffect(Unit) {
