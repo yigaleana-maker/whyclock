@@ -121,7 +121,9 @@ fun PantallaMusica(ahora: Long) {
     LaunchedEffect(angulo) { val d = (angulo - ultimo + 360f) % 360f; if (sonando) base = (base + d) % 360f; ultimo = angulo }
     val brazo by animateFloatAsState(if (sonando) 24f else 0f, tween(700), label = "brazo")
 
-    BoxWithConstraints(Modifier.fillMaxSize().background(fondo)) {
+    Column(Modifier.fillMaxSize().background(fondo)) {
+    Encabezado("Música", null, "Alarmas" to 7, tinta)
+    BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
         val horizontal = maxWidth > maxHeight
         val lado = (if (horizontal) min(maxHeight.value * 0.82f, maxWidth.value * 0.48f) else min(maxWidth.value * 0.85f, maxHeight.value * 0.5f)).dp
         val tocadiscos: @Composable () -> Unit = {
@@ -196,4 +198,5 @@ fun PantallaMusica(ahora: Long) {
             info(Modifier.fillMaxWidth())
         }
     }
+}
 }

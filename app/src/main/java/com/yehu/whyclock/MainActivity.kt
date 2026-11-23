@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private const val PAGINAS = 9
+const val PAGINAS = 11
 private val INTER = FontFamily(Font(R.font.inter_600, FontWeight.SemiBold))
 
 @androidx.compose.runtime.Composable
@@ -80,12 +80,12 @@ private fun Pantallas() {
     val alcance = rememberCoroutineScope()
     var barra by remember { mutableStateOf(false) }
     var toques by remember { mutableIntStateOf(0) }
-    var verAlarmas by remember { mutableStateOf(false) }
-    var verTemporizador by remember { mutableStateOf(false) }
+    var verReposo by remember { mutableStateOf(false) }
     /* La barra de ajustes aparece al tocar y se esconde sola */
     LaunchedEffect(barra, toques) { if (barra) { delay(4500); barra = false } }
     LaunchedEffect(estado) { snapshotFlow { estado.currentPage }.collect { Ajustes.pagina = it; Ajustes.guardar(ctx) } }
 
+    androidx.compose.runtime.CompositionLocalProvider(LocalIr provides { n -> alcance.launch { estado.animateScrollToPage(n) } }) {
     Box(
         Modifier.fillMaxSize().background(Color.Black).pointerInput(Unit) {
             detectTapGestures(
@@ -99,7 +99,7 @@ private fun Pantallas() {
         }
     ) {
         HorizontalPager(state = estado, modifier = Modifier.fillMaxSize()) { p ->
-            Pagina(p, ahora)
+            Box(Modifier.fillMaxSize().paginaFluida(estado, p)) { Pagina(p, ahora) }
         }
         AnimatedVisibility(
             visible = barra,
@@ -121,19 +121,20 @@ private fun Pantallas() {
                 }
                 chip(if (Ajustes.oscuro) "Modo claro" else "Modo oscuro") { Ajustes.oscuro = !Ajustes.oscuro }
                 chip("Letra: " + Ajustes.nombreLetra()) { Ajustes.siguienteLetra() }
-                chip("Alarmas") { verAlarmas = true; barra = false }
-                chip("Temporizador") { verTemporizador = true; barra = false }
                 chip("Ciudad") { Clima.pedir = true; barra = false }
+                chip("Pantalla de reposo") { verReposo = true; barra = false }
                 chip(if (Ajustes.suave) "Movimiento suave" else "Movimiento por pasos") { Ajustes.suave = !Ajustes.suave }
             }
         }
-        if (verAlarmas) DialogoAlarmas { verAlarmas = false }
-        if (verTemporizador) DialogoTemporizador { verTemporizador = false }
+        if (verReposo) DialogoReposo { verReposo = false; Ajustes.guardar(ctx) }
         DialogoCiudad()
+    }
     }
 }
 
-/* Las nueve pantallas, en el orden del original */
+/* Las pantallas, en orden. Alarmas y Temporizador van junto a Música, como en el original */
+val NOMBRES = listOf("Analógico", "Digital", "Dual", "Clima", "Fecha", "Calendario", "Música", "Alarmas", "Temporizador", "Hora grande", "Respira")
+
 @androidx.compose.runtime.Composable
 fun Pagina(p: Int, ahora: Long) {
     when (p) {
@@ -144,7 +145,35 @@ fun Pagina(p: Int, ahora: Long) {
         4 -> PantallaFecha(ahora)
         5 -> PantallaCalendario(ahora)
         6 -> PantallaMusica(ahora)
-        7 -> PantallaHoraGrande(ahora)
+        7 -> PantallaAlarmas("Música" to 6, "Temporizador" to 8)
+        8 -> PantallaTemporizador("Alarmas" to 7, "Hora grande" to 9)
+        9 -> PantallaHoraGrande(ahora)
         else -> PantallaRespira()
     }
+}
+
+/* Elegir qué pantalla se ve cuando el teléfono se carga */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@androidx.compose.runtime.Composable
+fun DialogoReposo(onCerrar: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onCerrar,
+        containerColor = Color(0xFF1B1613),
+        title = { Text("Pantalla de reposo", color = Color(0xFFF0E9E2), fontFamily = INTER) },
+        text = {
+            androidx.compose.foundation.layout.Column {
+                Text("Elige qué reloj se ve cuando el teléfono está cargando.", color = Color(0xB3F0E9E2), fontSize = 13.sp, fontFamily = INTER)
+                androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    NOMBRES.forEachIndexed { i, n ->
+                        if (i == 7 || i == 8) return@forEachIndexed
+                        val on = Ajustes.reposo == i
+                        val fondo by androidx.compose.animation.animateColorAsState(if (on) Color(0xFFE0403A) else Color(0xFF2A2420), label = "r")
+                        Text(n, color = Color(0xFFF0E9E2), fontFamily = INTER, fontSize = 14.sp,
+                            modifier = Modifier.pulsable { Ajustes.reposo = i }.clip(RoundedCornerShape(99.dp)).background(fondo).padding(horizontal = 16.dp, vertical = 10.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onCerrar) { Text("Listo", color = Color(0xFFE0403A), fontFamily = INTER) } }
+    )
 }

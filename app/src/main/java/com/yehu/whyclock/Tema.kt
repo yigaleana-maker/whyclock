@@ -65,6 +65,8 @@ object Ajustes {
     var letra by mutableStateOf("original")
     var suave by mutableStateOf(true)
     var pagina by mutableStateOf(0)
+    /* La pantalla que se ve en el modo reposo (cuando se carga) */
+    var reposo by mutableStateOf(0)
 
     fun cargar(ctx: Context) {
         val p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -72,11 +74,12 @@ object Ajustes {
         letra = p.getString("letra", "original") ?: "original"
         suave = p.getBoolean("suave", true)
         pagina = p.getInt("pagina", 0)
+        reposo = p.getInt("reposo", 0)
     }
 
     fun guardar(ctx: Context) {
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putBoolean("oscuro", oscuro).putString("letra", letra).putBoolean("suave", suave).putInt("pagina", pagina).apply()
+            .putBoolean("oscuro", oscuro).putString("letra", letra).putBoolean("suave", suave).putInt("pagina", pagina).putInt("reposo", reposo).apply()
     }
 
     fun colores() = if (oscuro) OSCURO else CLARO
