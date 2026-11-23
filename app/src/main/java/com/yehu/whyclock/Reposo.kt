@@ -74,8 +74,7 @@ class Reposo : DreamService(), LifecycleOwner, SavedStateRegistryOwner {
     override fun onDestroy() { ciclo.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY); super.onDestroy() }
 }
 
-/* En reposo solo los relojes (sin Alarmas ni Temporizador, que piden tocar) */
-private val EN_REPOSO = listOf(0, 1, 2, 3, 4, 5, 6, 9, 10)
+private val EN_REPOSO = (0 until PAGINAS).toList()
 
 @androidx.compose.runtime.Composable
 private fun Contenido(salir: () -> Unit) {

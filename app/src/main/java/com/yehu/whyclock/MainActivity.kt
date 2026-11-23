@@ -69,7 +69,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-const val PAGINAS = 11
+const val PAGINAS = 8
+/* Para LocalIr: 0-7 son relojes; estos dos son las pantallas de abajo */
+const val IR_ALARMAS = 100
+const val IR_TEMPORIZADOR = 101
 private val INTER = FontFamily(Font(R.font.inter_600, FontWeight.SemiBold))
 
 @androidx.compose.runtime.Composable
@@ -78,6 +81,8 @@ private fun Pantallas() {
     val ahora = rememberAhora()
     val estado = rememberPagerState(initialPage = Ajustes.pagina.coerceIn(0, PAGINAS - 1)) { PAGINAS }
     val alcance = rememberCoroutineScope()
+    /* Arriba los relojes (se deslizan a los lados); deslizando hacia arriba, Alarmas y luego Temporizador, como en el original */
+    val vertical = rememberPagerState { 3 }
     var barra by remember { mutableStateOf(false) }
     var toques by remember { mutableIntStateOf(0) }
     var verReposo by remember { mutableStateOf(false) }
@@ -85,8 +90,22 @@ private fun Pantallas() {
     LaunchedEffect(barra, toques) { if (barra) { delay(4500); barra = false } }
     LaunchedEffect(estado) { snapshotFlow { estado.currentPage }.collect { Ajustes.pagina = it; Ajustes.guardar(ctx) } }
 
-    androidx.compose.runtime.CompositionLocalProvider(LocalIr provides { n -> alcance.launch { estado.animateScrollToPage(n) } }) {
-    Box(
+    val ir: (Int) -> Unit = { n ->
+        alcance.launch {
+            when (n) {
+                IR_ALARMAS -> vertical.animateScrollToPage(1)
+                IR_TEMPORIZADOR -> vertical.animateScrollToPage(2)
+                else -> { launch { vertical.animateScrollToPage(0) }; if (n >= 0) estado.animateScrollToPage(n.coerceIn(0, PAGINAS - 1)) }
+            }
+        }
+    }
+    androidx.compose.runtime.CompositionLocalProvider(LocalIr provides ir) {
+    androidx.compose.foundation.pager.VerticalPager(vertical, Modifier.fillMaxSize().background(Color.Black), beyondViewportPageCount = 1) { v ->
+    Box(Modifier.fillMaxSize().paginaFluida(vertical, v)) {
+    when (v) {
+    1 -> PantallaAlarmas("Reloj" to -1, "Música" to 6)
+    2 -> PantallaTemporizador("Música" to 6, "Alarmas" to IR_ALARMAS)
+    else -> Box(
         Modifier.fillMaxSize().background(Color.Black).pointerInput(Unit) {
             detectTapGestures(
                 onTap = { barra = !barra; toques++ },
@@ -127,13 +146,16 @@ private fun Pantallas() {
             }
         }
         if (verReposo) DialogoReposo { verReposo = false; Ajustes.guardar(ctx) }
-        DialogoCiudad()
     }
+    }
+    }
+    }
+    DialogoCiudad()
     }
 }
 
-/* Las pantallas, en orden. Alarmas y Temporizador van junto a Música, como en el original */
-val NOMBRES = listOf("Analógico", "Digital", "Dual", "Clima", "Fecha", "Calendario", "Música", "Alarmas", "Temporizador", "Hora grande", "Respira")
+/* Los relojes, en el orden del original. Alarmas y Temporizador están abajo (deslizando hacia arriba) */
+val NOMBRES = listOf("Analógico", "Digital", "Dual", "Clima", "Fecha", "Calendario", "Música", "Hora grande")
 
 @androidx.compose.runtime.Composable
 fun Pagina(p: Int, ahora: Long) {
@@ -145,10 +167,7 @@ fun Pagina(p: Int, ahora: Long) {
         4 -> PantallaFecha(ahora)
         5 -> PantallaCalendario(ahora)
         6 -> PantallaMusica(ahora)
-        7 -> PantallaAlarmas("Música" to 6, "Temporizador" to 8)
-        8 -> PantallaTemporizador("Alarmas" to 7, "Hora grande" to 9)
-        9 -> PantallaHoraGrande(ahora)
-        else -> PantallaRespira()
+        else -> PantallaHoraGrande(ahora)
     }
 }
 
@@ -165,7 +184,6 @@ fun DialogoReposo(onCerrar: () -> Unit) {
                 Text("Elige qué reloj se ve cuando el teléfono está cargando.", color = Color(0xB3F0E9E2), fontSize = 13.sp, fontFamily = INTER)
                 androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     NOMBRES.forEachIndexed { i, n ->
-                        if (i == 7 || i == 8) return@forEachIndexed
                         val on = Ajustes.reposo == i
                         val fondo by androidx.compose.animation.animateColorAsState(if (on) Color(0xFFE0403A) else Color(0xFF2A2420), label = "r")
                         Text(n, color = Color(0xFFF0E9E2), fontFamily = INTER, fontSize = 14.sp,

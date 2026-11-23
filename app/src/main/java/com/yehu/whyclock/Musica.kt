@@ -122,7 +122,7 @@ fun PantallaMusica(ahora: Long) {
     val brazo by animateFloatAsState(if (sonando) 24f else 0f, tween(700), label = "brazo")
 
     Column(Modifier.fillMaxSize().background(fondo)) {
-    Encabezado("Música", null, "Alarmas" to 7, tinta)
+    Encabezado("Música", null, "Alarmas" to IR_ALARMAS, tinta)
     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
         val horizontal = maxWidth > maxHeight
         val lado = (if (horizontal) min(maxHeight.value * 0.82f, maxWidth.value * 0.48f) else min(maxWidth.value * 0.85f, maxHeight.value * 0.5f)).dp
