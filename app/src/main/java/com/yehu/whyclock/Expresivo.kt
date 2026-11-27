@@ -68,10 +68,11 @@ fun BotonExpresivo(
     val presionado by fuente.collectIsPressedAsState()
     val resorte = spring<Float>(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
     val esquina by animateFloatAsState(if (redondo) (if (presionado) 24f else 50f) else (if (presionado) 50f else 28f), resorte, label = "esquina")
-    val escala by animateFloatAsState(if (presionado) 0.94f else 1f, resorte, label = "escala")
+    val forma = RoundedCornerShape(esquina.toInt().coerceIn(0, 50))
+    /* Además de cambiar de forma: se estira hacia tu dedo, brilla donde tocas y rebota al soltar */
     Box(
-        modifier.graphicsLayer { scaleX = escala; scaleY = escala }
-            .clip(RoundedCornerShape(esquina.toInt().coerceIn(0, 50)))
+        modifier.elastico(forma)
+            .clip(forma)
             .background(fondo)
             .clickable(interactionSource = fuente, indication = null, enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center, content = contenido

@@ -128,7 +128,7 @@ private fun Pantallas() {
         HorizontalPager(state = estado, modifier = Modifier.fillMaxSize(),
             flingBehavior = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(estado,
                 snapAnimationSpec = androidx.compose.animation.core.spring(dampingRatio = 1f, stiffness = 1000f))) { p ->
-            Box(Modifier.fillMaxSize().paginaFluida(estado, p)) { Pagina(p, ahora) }
+            Box(Modifier.fillMaxSize().then(if (p <= 1) Modifier.relojQueSeConvierte(estado, p) else Modifier.paginaFluida(estado, p))) { Pagina(p, ahora) }
         }
         AnimatedVisibility(
             visible = barra,

@@ -128,24 +128,23 @@ private fun Pildora(texto: String, fondo: Color, tinta: Color, modifier: Modifie
 
 /* Columna ▲ número ▼: el número va sobre una galleta que gira un poquito con cada cambio */
 @Composable
-private fun Selector(valor: Int, t: TonosA, etiqueta: String?, onCambio: (Int) -> Unit) {
+private fun Selector(valor: Int, t: TonosA, etiqueta: String?, max: Int, onCambio: (Int) -> Unit) {
     val f = familiaDigitos()
     var vueltas by remember { mutableIntStateOf(0) }
     val giro by animateFloatAsState(vueltas * 40f, spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessLow), label = "giro")
-    val cambiar = { d: Int -> vueltas += d; onCambio(d) }
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        BotonExpresivo(t.boton, Modifier.width(64.dp).height(36.dp), redondo = false, onClick = { cambiar(1) }) { Text("▲", color = t.tinta, fontSize = 18.sp) }
-        Box(Modifier.size(104.dp), contentAlignment = Alignment.Center) {
-            Box(Modifier.size(100.dp).graphicsLayer { rotationZ = giro }.clip(Galleta(9, 0.1f)).background(t.boton.copy(alpha = 0.55f)))
-            NumeroRodante(valor) { Text("%02d".format(it), color = t.tinta, fontFamily = f, fontSize = 50.sp, textAlign = TextAlign.Center) }
+    /* El número gira como rodillo, y abajo el tambor: lo giras con el dedo a los lados */
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(Modifier.width(104.dp).height(80.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(80.dp).graphicsLayer { rotationZ = giro }.clip(Galleta(9, 0.1f)).background(t.boton.copy(alpha = 0.55f)))
+            TextoRodillo("%02d".format(valor), androidx.compose.ui.text.TextStyle(fontFamily = f, fontSize = 48.sp), t.tinta)
         }
-        BotonExpresivo(t.boton, Modifier.width(64.dp).height(36.dp), redondo = false, onClick = { cambiar(-1) }) { Text("▼", color = t.tinta, fontSize = 18.sp) }
+        Tambor(valor, 0, max, { n -> vueltas += (n - valor); onCambio(n - valor) }, t.tinta, t.boton, Modifier.width(104.dp).height(44.dp))
         if (etiqueta != null) Text(etiqueta, color = t.tenue, fontFamily = JOST_A, fontSize = 13.sp)
     }
 }
 
 @Composable
-private fun Separador(t: TonosA) = Text(":", color = t.tinta, fontFamily = familiaDigitos(), fontSize = 44.sp, modifier = Modifier.padding(bottom = 20.dp))
+private fun Separador(t: TonosA) = Text(":", color = t.tinta, fontFamily = familiaDigitos(), fontSize = 44.sp, modifier = Modifier.padding(bottom = 60.dp))
 
 private val LETRAS = listOf("L", "M", "X", "J", "V", "S", "D")
 
@@ -173,7 +172,7 @@ fun PantallaAlarmas(atras: Pair<String, Int>?, adelante: Pair<String, Int>?) {
             Encabezado("Alarmas", atras, adelante, t.tinta)
             Pildora("+ Nueva alarma", t.rojo, Color.White) { editando = Alarma(Alarmas.nuevoId(), 7, 0, 31, true, "") }
             Spacer(Modifier.height(14.dp))
-            LazyColumn(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            LazyColumn(Modifier.fillMaxWidth().weight(1f).bordesSuaves(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(Alarmas.lista.sortedBy { it.hora * 60 + it.minuto }, key = { it.id }) { a ->
                     val apagada by animateFloatAsState(if (a.activa) 1f else 0.45f, tween(300), label = "apagada")
                     /* Tarjeta con esquinas grandes; activa se vuelve más redonda */
@@ -244,9 +243,9 @@ private fun EditorAlarma(e: Alarma, t: TonosA, onCerrar: () -> Unit, onGuardar: 
         ) {
             val reloj: @Composable () -> Unit = {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Selector(h, t, null) { h = (h + it + 24) % 24 }
+                    Selector(h, t, null, 23) { h = (h + it + 24) % 24 }
                     Separador(t)
-                    Selector(m, t, null) { m = (m + it + 60) % 60 }
+                    Selector(m, t, null, 59) { m = (m + it + 60) % 60 }
                 }
             }
             val resto: @Composable () -> Unit = {
@@ -306,11 +305,11 @@ fun PantallaTemporizador(atras: Pair<String, Int>?, adelante: Pair<String, Int>?
             }, label = "modo") { activo ->
                 if (!activo) Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Selector(h, t, "horas") { h = (h + it + 24) % 24 }
+                        Selector(h, t, "horas", 23) { h = (h + it + 24) % 24 }
                         Separador(t)
-                        Selector(m, t, "min") { m = (m + it + 60) % 60 }
+                        Selector(m, t, "min", 59) { m = (m + it + 60) % 60 }
                         Separador(t)
-                        Selector(s, t, "seg") { s = (s + it + 60) % 60 }
+                        Selector(s, t, "seg", 59) { s = (s + it + 60) % 60 }
                     }
                     Spacer(Modifier.height(14.dp))
                     Pildora("Iniciar", t.rojo, Color.White) { val ms = (h * 3600L + m * 60L + s) * 1000L; if (ms > 0) Temporizador.iniciar(ctx, ms) }
@@ -342,7 +341,7 @@ private fun Corriendo(t: TonosA, queda: Long, pausado: Boolean, ahora: Long) {
                         if (Ajustes.oscuro) Color(0xFFFFC23A) else Color(0xFFE0392B), size.width * 9f / 200f)
                 }
                 val seg = ((queda + 999) / 1000).toInt()
-                Text("%02d:%02d:%02d".format(seg / 3600, seg / 60 % 60, seg % 60), color = t.tinta, fontFamily = f, fontSize = (lado.value * 0.13f).sp,
+                TextoRodillo("%02d:%02d:%02d".format(seg / 3600, seg / 60 % 60, seg % 60), androidx.compose.ui.text.TextStyle(fontFamily = f, fontSize = (lado.value * 0.13f).sp), t.tinta,
                     modifier = Modifier.graphicsLayer { alpha = if (pausado) (0.55f + 0.45f * kotlin.math.abs(kotlin.math.sin(ahora / 500.0)).toFloat()) else 1f })
             }
         }

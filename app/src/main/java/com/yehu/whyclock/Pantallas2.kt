@@ -158,7 +158,7 @@ fun PantallaCalendario(ahora: Long) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(SimpleDateFormat("MMMM yyyy", ES).format(ahora).replaceFirstChar { it.uppercase() }, color = rojo, fontFamily = INTER, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
                 val h = (ca.get(Calendar.HOUR) .let { if (it == 0) 12 else it })
-                Text("$h:%02d".format(ca.get(Calendar.MINUTE)), color = rojo, fontFamily = INTER, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                TextoRodillo("$h:%02d".format(ca.get(Calendar.MINUTE)), TextStyle(fontFamily = INTER, fontWeight = FontWeight.Bold, fontSize = 18.sp), rojo)
             }
             Spacer(Modifier.height(6.dp))
             /* El mes encima del número: domingo primero, como el original */
@@ -197,9 +197,10 @@ fun PantallaHoraGrande(ahora: Long) {
     val c2 by androidx.compose.animation.animateColorAsState(if (Ajustes.oscuro) pal.c2.second else pal.c2.first, tween(500), label = "c2")
     BoxWithConstraints(Modifier.fillMaxSize().background(fondo)) {
         val tam = min(maxWidth.value * 0.3f, maxHeight.value * 0.62f)
-        Text(
+        /* La hora gira como rodillo cada minuto */
+        TextoRodillo(
             "%02d:%02d".format(ca.get(Calendar.HOUR_OF_DAY), ca.get(Calendar.MINUTE)),
-            color = c1, fontFamily = f, fontSize = tam.sp, lineHeight = tam.sp,
+            TextStyle(fontFamily = f, fontSize = tam.sp, lineHeight = tam.sp), c1,
             modifier = Modifier.align(Alignment.Center).pulsable(hundir = 0.96f) {
                 Variantes.colorGrande = (Variantes.colorGrande + 1) % PALETA_GRANDE.size; Variantes.guardar(ctx)
             }
@@ -319,8 +320,8 @@ fun PantallaClima(ahora: Long) {
             Column(m, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 val hh = ca.get(Calendar.HOUR).let { if (it == 0) 12 else it }
                 val t = min(w * (if (horizontal) 0.2f else 0.32f), h * (if (horizontal) 0.34f else 0.2f))
-                Text("%02d".format(hh), color = tinta, fontFamily = f, fontSize = t.sp, lineHeight = t.sp)
-                Text("%02d".format(ca.get(Calendar.MINUTE)), color = tinta, fontFamily = f, fontSize = t.sp, lineHeight = t.sp)
+                TextoRodillo("%02d".format(hh), TextStyle(fontFamily = f, fontSize = t.sp, lineHeight = t.sp), tinta)
+                TextoRodillo("%02d".format(ca.get(Calendar.MINUTE)), TextStyle(fontFamily = f, fontSize = t.sp, lineHeight = t.sp), tinta)
                 Text(if (ca.get(Calendar.HOUR_OF_DAY) >= 12) "PM" else "AM", color = tinta.copy(alpha = 0.7f), fontFamily = f, fontSize = 18.sp)
             }
         }
