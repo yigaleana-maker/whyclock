@@ -71,7 +71,7 @@ import kotlin.math.sin
 /* ——— Texto de rodillo: cada letra que cambia gira como un odómetro, una tras otra ——— */
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun TextoRodillo(texto: String, estilo: TextStyle, color: Color, modifier: Modifier = Modifier) {
+fun TextoRodillo(texto: String, estilo: TextStyle, color: Color, modifier: Modifier = Modifier, tabular: Boolean = true) {
     val medidor = rememberTextMeasurer()
     val densidad = LocalDensity.current
     /* Todos los dígitos ocupan lo mismo: así nada brinca de lado al cambiar */
@@ -82,7 +82,10 @@ fun TextoRodillo(texto: String, estilo: TextStyle, color: Color, modifier: Modif
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         texto.forEachIndexed { i, ch ->
             val c = ch.toString()
-            val ancho = if (ch.isDigit()) anchoDigito else remember(c, estilo) { medidor.measure(c, estilo).size.width }
+            /* tabular: todos los dígitos del mismo ancho. Si no, cada uno el suyo y el cambio de ancho es suave */
+            val anchoReal = remember(c, estilo) { medidor.measure(c, estilo).size.width }
+            val anchoMeta = if (tabular && ch.isDigit()) anchoDigito else anchoReal
+            val ancho by animateFloatAsState(anchoMeta.toFloat(), spring(dampingRatio = 1f, stiffness = 420f), label = "anchoRodillo")
             var mostrado by remember { mutableStateOf(c) }
             val turno = cambiados.indexOf(i).coerceAtLeast(0)
             LaunchedEffect(c) {

@@ -200,7 +200,7 @@ fun PantallaHoraGrande(ahora: Long) {
         /* La hora gira como rodillo cada minuto */
         TextoRodillo(
             "%02d:%02d".format(ca.get(Calendar.HOUR_OF_DAY), ca.get(Calendar.MINUTE)),
-            TextStyle(fontFamily = f, fontSize = tam.sp, lineHeight = tam.sp), c1,
+            TextStyle(fontFamily = f, fontSize = tam.sp, lineHeight = tam.sp), c1, tabular = false,
             modifier = Modifier.align(Alignment.Center).pulsable(hundir = 0.96f) {
                 Variantes.colorGrande = (Variantes.colorGrande + 1) % PALETA_GRANDE.size; Variantes.guardar(ctx)
             }
